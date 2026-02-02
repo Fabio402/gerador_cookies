@@ -13,12 +13,12 @@ Gerador Cookies follows a layered architecture with clear separation of concerns
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Scraper Interface                        │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │                    scraper.Scraper                        │  │
-│  │  - NewScraper()     - GenerateSession()                  │  │
-│  │  - GetCookies()     - GetAntiBotScript()                 │  │
-│  │  - SetCookies()     - GetAntiBotScriptURL()              │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                    scraper.Scraper                       │   │
+│  │  - NewScraper()     - GenerateSession()                  │   │
+│  │  - GetCookies()     - GetAntiBotScript()                 │   │
+│  │  - SetCookies()     - GetAntiBotScriptURL()              │   │
+│  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
                                │
           ┌────────────────────┼────────────────────┐
@@ -34,9 +34,9 @@ Gerador Cookies follows a layered architecture with clear separation of concerns
 │ │ (net/http)  │ │           ▼
 │ └─────────────┘ │  ┌─────────────────────────────────────┐
 └─────────────────┘  │         Provider APIs               │
-                     │  ┌─────────┬─────────┬─────────┐   │
-                     │  │  Jevi   │   N4S   │ Roolink │   │
-                     │  └─────────┴─────────┴─────────┘   │
+                     │  ┌─────────┬─────────┬─────────┐    │
+                     │  │  Jevi   │   N4S   │ Roolink │    │
+                     │  └─────────┴─────────┴─────────┘    │
                      └─────────────────────────────────────┘
 ```
 
@@ -114,7 +114,7 @@ type providerCacheEntry struct {
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                        Target Website (Akamai Protected)              │
+│                        Target Website (Akamai Protected)             │
 └──────────────────────────────────────────────────────────────────────┘
                                     │
                     ┌───────────────┴───────────────┐
@@ -122,7 +122,7 @@ type providerCacheEntry struct {
         1. GET Homepage                 2. Extract Script URL
         (seed cookies)                  (from HTML body)
                     │                               │
-        ┌───────────┴────────────┬─────────────────┤
+        ┌───────────┴────────────┬──────────────────┤
         │                        │                  │
     ┌───▼────────────────────────▼──────────────────▼──┐
     │           Scraper (with TLS Fingerprinting)      │
@@ -141,9 +141,9 @@ type providerCacheEntry struct {
     │      AkamaiSolver (Provider Logic)             │
     │  ┌─────────────────────────────────────────┐   │
     │  │ Provider Options:                       │   │
-    │  │ • Jevi (jevi.dev)                      │   │
-    │  │ • N4S  (n4s.xyz)                       │   │
-    │  │ • Roolink (roolink.io)                 │   │
+    │  │ • Jevi (jevi.dev)                       │   │
+    │  │ • N4S  (n4s.xyz)                        │   │
+    │  │ • Roolink (roolink.io)                  │   │
     │  └─────────────────────────────────────────┘   │
     │                                                │
     │  4. Call Provider API:                         │
@@ -189,7 +189,7 @@ The library supports multiple browser profiles for TLS fingerprinting:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Browser Profile Factory                   │
+│                    Browser Profile Factory                  │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐                   │
 │  │   Chrome 142    │  │   Chrome 143    │  (Default)        │
@@ -199,7 +199,7 @@ The library supports multiple browser profiles for TLS fingerprinting:
 │  │  │Headers    │  │  │  │Headers    │  │                   │
 │  │  └───────────┘  │  │  └───────────┘  │                   │
 │  └─────────────────┘  └─────────────────┘                   │
-│                                                              │
+│                                                             │
 │  ┌─────────────────┐  ┌─────────────────┐                   │
 │  │  Safari iOS 18  │  │  Firefox 135    │                   │
 │  │  ┌───────────┐  │  │  ┌───────────┐  │                   │
@@ -227,20 +227,20 @@ The library supports multiple browser profiles for TLS fingerprinting:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Config.AkamaiProvider                   │
+│                      Config.AkamaiProvider                  │
 ├─────────────────────────────────────────────────────────────┤
-│                              │                               │
+│                              │                              │
 │           ┌──────────────────┼──────────────────┐           │
 │           ▼                  ▼                  ▼           │
-│    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐   │
-│    │    Jevi     │    │     N4S     │    │   Roolink   │   │
-│    │  jevi.dev   │    │   n4s.xyz   │    │ roolink.io  │   │
-│    │             │    │             │    │             │   │
-│    │ POST /solve │    │ POST /sensor│    │POST /sensor │   │
-│    │             │    │ GET /values │    │             │   │
-│    └─────────────┘    └─────────────┘    └─────────────┘   │
-│                              │                               │
-│                              ▼                               │
+│    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    │
+│    │    Jevi     │    │     N4S     │    │   Roolink   │    │
+│    │  jevi.dev   │    │   n4s.xyz   │    │ roolink.io  │    │
+│    │             │    │             │    │             │    │
+│    │ POST /solve │    │ POST /sensor│    │POST /sensor │    │
+│    │             │    │ GET /values │    │             │    │
+│    └─────────────┘    └─────────────┘    └─────────────┘    │
+│                              │                              │
+│                              ▼                              │
 │                    ┌─────────────────┐                      │
 │                    │  Sensor Data    │                      │
 │                    │  Generation     │                      │
@@ -274,12 +274,12 @@ Examples:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    ProviderCache                             │
+│                    ProviderCache                            │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
+│                                                             │
 │   ┌─────────────────────────────────────────────────────┐   │
-│   │                    Cache Lookup                      │   │
-│   │                         │                            │   │
+│   │                    Cache Lookup                     │   │
+│   │                         │                           │   │
 │   │    ┌────────────────────┴────────────────────┐      │   │
 │   │    │                                         │      │   │
 │   │    ▼                                         ▼      │   │
@@ -295,9 +295,9 @@ Examples:
 │   │                                          Update     │   │
 │   │                                          Cache      │   │
 │   └─────────────────────────────────────────────────────┘   │
-│                                                              │
+│                                                             │
 │   Storage: ~/.cache/reqs/provider-cache.json                │
-│   TTL: 24 hours                                              │
+│   TTL: 24 hours                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -309,21 +309,21 @@ Examples:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Sensor Submission Loop                    │
+│                    Sensor Submission Loop                   │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
+│                                                             │
 │   for i := 0; i < SensorPostLimit; i++ {                    │
-│       sensor := solver.GenerateSensor()                      │
+│       sensor := solver.GenerateSensor()                     │
 │       response := sendAntiBotRequest(sensor)                │
-│                                                              │
-│       if validateResponse(response) {                        │
-│           return SUCCESS                                     │
-│       }                                                      │
-│                                                              │
-│       // Retry with new sensor                               │
-│   }                                                          │
-│   return FAILURE                                             │
-│                                                              │
+│                                                             │
+│       if validateResponse(response) {                       │
+│           return SUCCESS                                    │
+│       }                                                     │
+│                                                             │
+│       // Retry with new sensor                              │
+│   }                                                         │
+│   return FAILURE                                            │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
