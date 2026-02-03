@@ -414,38 +414,7 @@ func (s *Scraper) GetAntiBotScriptURL(providedUrl string) (string, error) {
 		return "", fmt.Errorf("failed to parse response body with goquery: %v", err)
 	}
 
-	akamaiUrl := ""
-	var candidateUrls []string
-
-	doc.Find("script").Each(func(index int, item *goquery.Selection) {
-		src, exists := item.Attr("src")
-		_, existsDefer := item.Attr("defer")
-
-		if exists {
-			parts := strings.Split(src, "/")
-
-			if s.config.SbSd && strings.Contains(src, "?v=") && len(parts) > 3 {
-				baseUrl := src
-				if strings.Contains(src, "?") {
-					baseUrl = strings.Split(src, "?")[0]
-				}
-				hasExtension := strings.Contains(baseUrl, ".js") || strings.Contains(baseUrl, ".css")
-				if !hasExtension {
-					candidateUrls = append(candidateUrls, src)
-				}
-			} else if !s.config.SbSd && !existsDefer && !strings.Contains(src, "?v=") && len(parts) > 3 {
-				hasExtension := strings.Contains(src, ".js") || strings.Contains(src, ".css")
-				if !hasExtension {
-					candidateUrls = append(candidateUrls, src)
-				}
-			}
-		}
-	})
-
-	// Select the last matching URL (the dynamic one)
-	if len(candidateUrls) > 0 {
-		akamaiUrl = candidateUrls[len(candidateUrls)-1]
-	}
+	akamaiUrl := s.pickAkamaiScriptURL(doc, s.config.SbSd)
 
 	if s.config.SbSd {
 		log.Printf("→ Found SbSd URL: %s", akamaiUrl)
@@ -458,6 +427,122 @@ func (s *Scraper) GetAntiBotScriptURL(providedUrl string) (string, error) {
 	}
 
 	return akamaiUrl, nil
+}
+
+func (s *Scraper) pickAkamaiScriptURL(doc *goquery.Document, sbSd bool) string {
+	candidateUrls := make([]string, 0)
+
+	doc.Find("script").Each(func(index int, item *goquery.Selection) {
+		src, exists := item.Attr("src")
+		_, existsDefer := item.Attr("defer")
+		if !exists || src == "" {
+			return
+		}
+
+		parts := strings.Split(src, "/")
+		hasVersion := strings.Contains(src, "?v=")
+
+		baseUrl := src
+		if strings.Contains(src, "?") {
+			baseUrl = strings.Split(src, "?")[0]
+		}
+		hasExtension := strings.Contains(baseUrl, ".js") || strings.Contains(baseUrl, ".css")
+
+		if sbSd {
+			if hasVersion && len(parts) > 3 && !hasExtension {
+				candidateUrls = append(candidateUrls, src)
+			}
+			return
+		}
+
+		if !existsDefer && !hasVersion && len(parts) > 3 && !hasExtension {
+			candidateUrls = append(candidateUrls, src)
+		}
+	})
+
+	if len(candidateUrls) == 0 {
+		return ""
+	}
+	return candidateUrls[len(candidateUrls)-1]
+}
+
+// FetchSbSdBootstrap follows the provided URL, collects cookies/bm_so, and extracts the SbSd script path.
+func (s *Scraper) FetchSbSdBootstrap(startURL string) (*SbSdBootstrapResult, error) {
+	if s == nil || s.siteClient == nil || s.cookieJar == nil || s.config == nil {
+		return nil, fmt.Errorf("scraper not initialized")
+	}
+
+	targetURL := normalizeStartURL(startURL, s.config.Domain)
+	headers, headersOrder := s.siteClient.buildHomepageHeaders()
+
+	currentURL := targetURL
+	var finalResp *SiteResponse
+	const maxRedirects = 10
+
+	for i := 0; i < maxRedirects; i++ {
+		resp, err := s.siteClient.Request("GET", currentURL, "", headers, headersOrder)
+		if err != nil {
+			return nil, fmt.Errorf("bootstrap request failed: %w", err)
+		}
+
+		if resp.Status >= 300 && resp.Status < 400 {
+			location := getHeaderValue(resp.Headers, "Location")
+			if location == "" {
+				return nil, fmt.Errorf("redirect from %s without Location header", currentURL)
+			}
+			nextURL, err := resolveRedirectURL(currentURL, location)
+			if err != nil {
+				return nil, err
+			}
+			currentURL = nextURL
+			continue
+		}
+
+		finalResp = resp
+		break
+	}
+
+	if finalResp == nil {
+		return nil, fmt.Errorf("max redirects reached without final response")
+	}
+
+	if finalResp.Status < 200 || finalResp.Status >= 300 {
+		return nil, fmt.Errorf("bootstrap response returned status %d", finalResp.Status)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(finalResp.Body)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse bootstrap HTML: %w", err)
+	}
+
+	scriptPath := s.pickAkamaiScriptURL(doc, true)
+	if scriptPath == "" {
+		return nil, fmt.Errorf("akamai script tag not found in bootstrap response")
+	}
+
+	bmSoCookie := s.cookieJar.GetCookie(s.config.Domain, "bm_so")
+	if bmSoCookie == nil {
+		return nil, fmt.Errorf("bm_so cookie not found in cookie jar")
+	}
+
+	fullScriptURL := scriptPath
+	switch {
+	case strings.HasPrefix(scriptPath, "//"):
+		fullScriptURL = "https:" + scriptPath
+	case strings.HasPrefix(scriptPath, "/"):
+		fullScriptURL = fmt.Sprintf("https://%s%s", s.config.Domain, scriptPath)
+	case !strings.HasPrefix(scriptPath, "http://") && !strings.HasPrefix(scriptPath, "https://"):
+		fullScriptURL = fmt.Sprintf("https://%s/%s", s.config.Domain, strings.TrimPrefix(scriptPath, "./"))
+	}
+
+	return &SbSdBootstrapResult{
+		BmSo:         bmSoCookie.Value,
+		ScriptPath:   scriptPath,
+		ScriptURL:    fullScriptURL,
+		Cookies:      s.cookieJar.GetCookies(s.config.Domain),
+		CookieString: s.cookieJar.GetCookieString(s.config.Domain),
+		FinalURL:     currentURL,
+	}, nil
 }
 
 // GenerateSession generates the _abck cookie (legacy API, uses TLS-API internally)
@@ -603,4 +688,52 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func getHeaderValue(headers map[string]string, name string) string {
+	if headers == nil || name == "" {
+		return ""
+	}
+	if v, ok := headers[name]; ok {
+		return v
+	}
+	lower := strings.ToLower(name)
+	for k, v := range headers {
+		if strings.ToLower(k) == lower {
+			return v
+		}
+	}
+	return ""
+}
+
+func resolveRedirectURL(currentURL, location string) (string, error) {
+	loc, err := url.Parse(location)
+	if err != nil {
+		return "", fmt.Errorf("invalid redirect location %q: %w", location, err)
+	}
+	if loc.IsAbs() {
+		return loc.String(), nil
+	}
+	base, err := url.Parse(currentURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid current url %q: %w", currentURL, err)
+	}
+	return base.ResolveReference(loc).String(), nil
+}
+
+func normalizeStartURL(input string, domain string) string {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
+		return fmt.Sprintf("https://%s", domain)
+	}
+	if strings.HasPrefix(trimmed, "http://") || strings.HasPrefix(trimmed, "https://") {
+		return trimmed
+	}
+	if strings.HasPrefix(trimmed, "//") {
+		return "https:" + trimmed
+	}
+	if strings.HasPrefix(trimmed, "/") && domain != "" {
+		return fmt.Sprintf("https://%s%s", domain, trimmed)
+	}
+	return fmt.Sprintf("https://%s", trimmed)
 }

@@ -48,6 +48,16 @@ type SBSDResult struct {
 	Error        *SolverError   // Error details if Success is false
 }
 
+// SbSdBootstrapResult contains data collected from the initial SbSd request flow.
+type SbSdBootstrapResult struct {
+	BmSo         string         // Value of bm_so cookie returned by the site
+	ScriptPath   string         // Script path extracted from the HTML
+	ScriptURL    string         // Absolute URL to the Akamai script
+	Cookies      []*http.Cookie // Cookies captured during the bootstrap flow
+	CookieString string         // Cookies formatted as a header-ready string
+	FinalURL     string         // Final URL reached after redirects
+}
+
 // SessionInfo contains metadata about the generation session
 type SessionInfo struct {
 	Proxy       string    // Proxy used for generation
