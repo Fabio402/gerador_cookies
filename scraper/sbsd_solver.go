@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -215,7 +216,10 @@ func (s *SBSDSolver) callJeviSBSD(script string, bmSo string, uuid string) (stri
 		return "", fmt.Errorf("compress payload: %w", err)
 	}
 
-	apiKey := "curiousT-a23f417f-096e-4258-adea-7ea874a57e56"
+	apiKey := s.config.JeviAPIKey
+	if apiKey == "" {
+		return "", fmt.Errorf("JEVI_API_KEY not configured")
+	}
 	userAgentPrefix := strings.Split(apiKey, "-")[0]
 
 	resp, err := s.tlsClient.Request(TLSRequest{
@@ -289,13 +293,18 @@ func (s *SBSDSolver) generateWithN4S(script string, bmSo string) (string, error)
 
 	jsonData, _ := json.Marshal(req)
 
+	apiKey := os.Getenv("N4S_API_KEY")
+	if apiKey == "" {
+		return "", fmt.Errorf("N4S_API_KEY not configured")
+	}
+
 	resp, err := s.tlsClient.Request(TLSRequest{
 		URL:     "https://n4s.xyz/sbsd",
 		Method:  "POST",
 		Browser: s.browser,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
-			"X-API-KEY":    "4DD7-F8F7-A935-972F-45B4-1A04",
+			"X-API-KEY":    apiKey,
 		},
 		Body:  string(jsonData),
 		Proxy: s.proxy,
@@ -404,7 +413,7 @@ func (s *SBSDSolver) generateWithRoolink(bmSo string) (string, error) {
 }
 
 func (s *SBSDSolver) roolinkAPIKey() string {
-	return "2710d9bf-26fd-4add-8172-805ba613d66b"
+	return s.config.RoolinkAPIKey
 }
 
 // ============================================================================

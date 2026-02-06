@@ -39,6 +39,10 @@ type Config struct {
 	// TLS-API specific fields
 	TLSAPIBrowser string // Browser profile for TLS-API (e.g., "chrome_133")
 	Proxy         string // Proxy URL for TLS-API requests
+	// Provider API Keys
+	JeviAPIKey    string
+	N4SAPIKey     string
+	RoolinkAPIKey string
 }
 
 var countryLanguageJSON = `{"ae":"ar-AE","ar":"es-AR","at":"de-AT","au":"en-AU","be":"nl-BE","bg":"bg-BG","bh":"ar-BH","bo":"es-BO","br":"pt-BR","by":"ru-BY","ca":"en-CA","ch":"de-CH","cl":"es-CL","cn":"zh-CN","co":"es-CO","cr":"es-CR","cz":"cs-CZ","de":"de-DE","dk":"da-DK","do":"es-DO","dz":"ar-DZ","ec":"es-EC","eg":"ar-EG","es":"es-ES","fi":"fi-FI","fr":"fr-FR","gb":"en-GB","gr":"el-GR","gt":"es-GT","hk":"zh-HK","hn":"es-HN","hu":"hu-HU","id":"id-ID","ie":"en-IE","il":"he-IL","in":"en-IN","iq":"ar-IQ","is":"is-IS","it":"it-IT","jo":"ar-JO","jp":"ja-JP","kr":"ko-KR","kw":"ar-KW","lb":"ar-LB","lu":"fr-LU","ma":"ar-MA","mx":"es-MX","my":"ms-MY","ni":"es-NI","nl":"nl-NL","no":"nb-NO","nz":"en-NZ","om":"ar-OM","pa":"es-PA","pe":"es-PE","ph":"en-PH","pl":"pl-PL","pr":"es-PR","pt":"pt-PT","py":"es-PY","qa":"ar-QA","ro":"ro-RO","ru":"ru-RU","sa":"ar-SA","se":"sv-SE","sg":"en-SG","sk":"sk-SK","sv":"es-SV","sy":"ar-SY","th":"th-TH","tn":"ar-TN","tr":"tr-TR","tw":"zh-TW","ua":"uk-UA","us":"en-US","uy":"es-UY","ve":"es-VE","vn":"vi-VN","za":"en-ZA"}`

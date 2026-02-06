@@ -74,7 +74,7 @@ func (c *TLSAPIClient) Request(req TLSRequest) (*TLSResponse, error) {
 
 	// Set default timeout if not specified
 	if req.Timeout == 0 {
-		req.Timeout = 30000 // 30 seconds in ms
+		req.Timeout = 30 // 30 seconds in ms
 	}
 
 	// Marshal request body

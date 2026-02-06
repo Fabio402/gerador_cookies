@@ -14,12 +14,12 @@ import (
 // SiteClient handles HTTP requests to target sites via TLS-API
 // Preserves headers, headerOrder, and browser profile for proper TLS fingerprinting
 type SiteClient struct {
-	tlsClient   *TLSAPIClient
-	cookieJar   *CookieJar
-	config      *Config
-	userAgent   UserAgent
-	browser     string
-	proxy       string
+	tlsClient *TLSAPIClient
+	cookieJar *CookieJar
+	config    *Config
+	userAgent UserAgent
+	browser   string
+	proxy     string
 }
 
 // NewSiteClient creates a new site client for making requests to target sites
@@ -67,6 +67,7 @@ func (c *SiteClient) Request(method, url string, body string, customHeaders map[
 		Cookies:       c.cookieJar.ToTLSAPICookies(c.config.Domain),
 		Proxy:         c.proxy,
 		ReturnCookies: true,
+		Timeout:       10,
 	}
 
 	resp, err := c.tlsClient.Request(req)

@@ -384,7 +384,10 @@ func (s *ABCKSolver) callJeviAPI(script, encodedData string, index int) (string,
 		return "", "", fmt.Errorf("compress payload: %w", err)
 	}
 
-	apiKey := "curiousT-a23f417f-096e-4258-adea-7ea874a57e56"
+	apiKey := s.config.JeviAPIKey
+	if apiKey == "" {
+		return "", "", fmt.Errorf("JEVI_API_KEY not configured")
+	}
 	userAgentPrefix := strings.Split(apiKey, "-")[0]
 
 	resp, err := s.tlsClient.Request(TLSRequest{
@@ -555,7 +558,7 @@ type abckRoolinkSensorRequest struct {
 }
 
 func (s *ABCKSolver) roolinkAPIKey() string {
-	return "2710d9bf-26fd-4add-8172-805ba613d66b"
+	return s.config.RoolinkAPIKey
 }
 
 func (s *ABCKSolver) parseRoolinkScript(script string) (*abckRoolinkScriptData, error) {
